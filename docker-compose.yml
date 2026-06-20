@@ -1,0 +1,35 @@
+# Runs the backend behind Caddy (automatic HTTPS) on a single VM.
+# See ORACLE-DEPLOY.md for the full Oracle Cloud walkthrough.
+#
+#   docker compose up -d --build
+#
+# Persistent volumes keep the WhatsApp session and chat media across restarts.
+services:
+  backend:
+    build: ./backend
+    restart: unless-stopped
+    env_file: ./backend/.env # must contain MONGODB_URI (create it on the VM)
+    expose:
+      - "4000" # internal only; Caddy proxies to it
+    volumes:
+      - wwebjs_auth:/app/.wwebjs_auth # WhatsApp login session (scan QR once)
+      - media:/app/media # sent/received chat media
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - backend
+
+volumes:
+  wwebjs_auth:
+  media:
+  caddy_data:
+  caddy_config:

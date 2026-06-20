@@ -6,20 +6,33 @@
 > serverless. So: **frontend → Vercel**, **backend → a long-running host**
 > (Railway / Render / Fly.io / VPS).
 
-## 1. Backend (Railway, Render, Fly.io, or a VPS)
+## 1. Backend on Render (free) — uses [`render.yaml`](render.yaml) + [`backend/Dockerfile`](backend/Dockerfile)
 
-Uses [`backend/Dockerfile`](backend/Dockerfile).
+1. Push this repo to GitHub.
+2. In Render: **New → Blueprint**, pick this repo. It reads `render.yaml` and creates
+   the `whatsapp-system-backend` web service (Docker, root dir `backend`, free plan).
+3. When prompted, set the secret env var **`MONGODB_URI`** = your MongoDB Atlas string.
+   (`MONGODB_DB` and `DEFAULT_COUNTRY_CODE` come from `render.yaml`; `PORT` is injected.)
+4. Deploy. First build takes a few minutes (it downloads Chromium). Note the public
+   URL, e.g. `https://whatsapp-system-backend.onrender.com`.
+5. In MongoDB Atlas → **Network Access**, allow `0.0.0.0/0` (Render IPs are dynamic).
+6. Connect WhatsApp: open your Vercel frontend (see step 2 below) — the QR appears in
+   the **Connect WhatsApp** popup; scan it.
 
-1. Create a new service from this repo, **root directory = `backend`** (Docker build).
-2. Set environment variables:
-   - `MONGODB_URI` — your MongoDB Atlas connection string
-   - `MONGODB_DB` — `WhatsApp-System` (optional, this is the default)
-   - `DEFAULT_COUNTRY_CODE` — `92` (optional)
-   - `PORT` — usually injected by the host automatically
-3. Add a **persistent volume/disk mounted at `/app/.wwebjs_auth`** so the WhatsApp
-   login survives restarts (otherwise you must rescan the QR after each deploy).
-4. Deploy, open the logs, and note the public URL, e.g. `https://your-backend.up.railway.app`.
-5. In MongoDB Atlas → **Network Access**, allow your host's IP (or `0.0.0.0/0` for testing).
+### ⚠️ Free-tier limits (important)
+- **Sleeps after ~15 min idle** → WhatsApp disconnects while asleep; the next request
+  cold-starts it (~50s). Incoming messages during sleep are missed.
+- **No persistent disk on free** → the `.wwebjs_auth/` session is wiped on every
+  redeploy/spin-down, so you must **rescan the QR** each time.
+- **512 MB RAM** is tight for headless Chromium; it may occasionally restart.
+- **Fix for the session loss:** switch from `LocalAuth` to **`RemoteAuth` storing the
+  session in MongoDB** (then it survives restarts even without a disk). Ask and I can
+  implement it. For always-on without sleep, use a paid plan or an Always-Free VM.
+
+### Other hosts (same Dockerfile)
+Railway / Fly.io (paid, always-on + volume) or Oracle Cloud Always-Free VM: create a
+service with **root dir `backend`**, the same env vars, and a volume at
+`/app/.wwebjs_auth` to keep the session.
 
 ## 2. Frontend (Vercel)
 

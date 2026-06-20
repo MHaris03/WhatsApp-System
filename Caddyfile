@@ -1,0 +1,6 @@
+# Replace api.example.com with YOUR domain (an A record pointing to the VM's
+# public IP). Caddy automatically obtains & renews a free Let's Encrypt
+# certificate and proxies HTTPS (incl. WebSockets/Socket.IO) to the backend.
+api.example.com {
+    reverse_proxy backend:4000
+}

@@ -1,0 +1,23 @@
+# Render Blueprint — deploys the backend from backend/Dockerfile.
+# In Render: New → Blueprint → pick this repo. Then set MONGODB_URI (and your
+# Vercel frontend's VITE_BACKEND_URL) as described in DEPLOYMENT.md.
+#
+# NOTE (free tier limits): no persistent disk + sleeps after ~15 min idle, so the
+# WhatsApp session is lost on every spin-down/redeploy and you must rescan the QR.
+# 512 MB RAM is tight for headless Chromium. Fine for testing; see DEPLOYMENT.md
+# for the RemoteAuth-in-MongoDB option to keep the session across restarts.
+services:
+  - type: web
+    name: whatsapp-system-backend
+    runtime: docker
+    rootDir: backend
+    plan: free
+    healthCheckPath: /api/status
+    autoDeploy: true
+    envVars:
+      - key: MONGODB_URI
+        sync: false # set this in the Render dashboard (secret)
+      - key: MONGODB_DB
+        value: WhatsApp-System
+      - key: DEFAULT_COUNTRY_CODE
+        value: "92"
