@@ -3,6 +3,7 @@
  */
 const router = require('express').Router();
 
+router.use('/auth', require('./authRoutes')); // /auth/register, /auth/login, /auth/me
 router.use('/', require('./statusRoutes')); // /status, /logout, /validate/:number
 router.use('/contacts', require('./contactsRoutes'));
 router.use('/chats', require('./chatsRoutes'));

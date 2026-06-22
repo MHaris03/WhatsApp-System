@@ -1,0 +1,10 @@
+const router = require('express').Router();
+const authController = require('../controllers/authController');
+const { requireAuth } = require('../middleware/auth');
+
+// Mounted at /api/auth
+router.post('/register', authController.register);
+router.post('/login', authController.login);
+router.get('/me', requireAuth, authController.me);
+
+module.exports = router;

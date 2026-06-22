@@ -24,4 +24,10 @@ module.exports = {
   // Country code added to LOCAL numbers (leading 0). Defaults to 92 (Pakistan).
   DEFAULT_CC: (process.env.DEFAULT_COUNTRY_CODE || '92').replace(/[^\d]/g, ''),
   MAX_UPLOAD_BYTES: 64 * 1024 * 1024, // 64 MB
+
+  // ---- Auth / multi-user ----
+  JWT_SECRET: process.env.JWT_SECRET || 'dev-insecure-secret-change-me',
+  JWT_EXPIRES: process.env.JWT_EXPIRES || '7d',
+  // Max number of users with an ACTIVE WhatsApp session at the same time.
+  MAX_ACTIVE_SESSIONS: parseInt(process.env.MAX_ACTIVE_SESSIONS || '3', 10),
 };

@@ -21,13 +21,20 @@ const COLLECTION = process.env.MONGODB_COLLECTION || 'WhatsApp-Chat';
 // ---- One schema for everything, pinned to the single collection -------------
 const docSchema = new mongoose.Schema(
   {
-    key: { type: String, required: true, unique: true }, // "chat:..|msg:..|contact:.."
-    type: { type: String, index: true }, // 'chat' | 'message' | 'contact'
+    key: { type: String, required: true, unique: true }, // "chat:..|msg:..|contact:..|user:.."
+    type: { type: String, index: true }, // 'chat' | 'message' | 'contact' | 'user'
+
+    // Owner of this document (for multi-user isolation). Empty for 'user' docs.
+    userId: { type: String, index: true, default: '' },
 
     // shared / chat + contact
-    id: String, // chatId (chat) or contact id (contact)
+    id: String, // chatId (chat), contact id (contact), or user id (user)
     number: { type: String, default: '' },
     name: { type: String, default: '' },
+
+    // user-only
+    email: { type: String, default: '' },
+    passwordHash: { type: String, default: '' },
 
     // chat-only
     isLid: { type: Boolean, default: false },
@@ -59,6 +66,7 @@ const Doc = mongoose.model('WhatsAppDoc', docSchema);
 const chatKey = (id) => `chat:${id}`;
 const msgKey = (mid) => `msg:${mid}`;
 const contactKey = (id) => `contact:${id}`;
+const userKey = (id) => `user:${id}`;
 
 // Wrap fire-and-forget writes so a DB hiccup logs instead of crashing.
 async function guard(label, fn) {
@@ -225,10 +233,37 @@ async function wipeAll() {
   return guard('wipeAll', () => Doc.deleteMany({ type: { $in: ['chat', 'message'] } }));
 }
 
+// ---- Users (multi-user auth) ----
+async function createUser(u) {
+  await Doc.create({
+    key: userKey(u.id),
+    type: 'user',
+    id: u.id,
+    name: u.name || '',
+    email: String(u.email || '').toLowerCase(),
+    passwordHash: u.passwordHash || '',
+    createdAt: u.createdAt || 0,
+  });
+  return { id: u.id, name: u.name || '', email: String(u.email || '').toLowerCase() };
+}
+
+async function getUserByEmail(email) {
+  return Doc.findOne({ type: 'user', email: String(email || '').toLowerCase() }).lean();
+}
+
+async function getUserById(id) {
+  return Doc.findOne({ key: userKey(id) }).lean();
+}
+
+async function countUsers() {
+  return Doc.countDocuments({ type: 'user' });
+}
+
 const api = {
   loadAll, saveChat, saveMessage, setUnread, setPinned,
   removeChat, clearMessages, removeMessage, wipeAll,
   listContacts, addContact, removeContact, clearContacts,
+  createUser, getUserByEmail, getUserById, countUsers,
 };
 
 module.exports = { initDb };

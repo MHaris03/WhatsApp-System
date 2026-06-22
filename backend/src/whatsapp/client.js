@@ -17,6 +17,9 @@ const client = new Client({
   authStrategy: new LocalAuth({ dataPath: AUTH_DIR }),
   puppeteer: {
     headless: true,
+    // In Docker we use the system Chromium (PUPPETEER_EXECUTABLE_PATH); locally
+    // this is unset, so Puppeteer falls back to its own bundled Chromium.
+    executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
     args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu'],
   },
 });
